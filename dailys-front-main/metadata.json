@@ -1,0 +1,10 @@
+{
+  "name": "dailys",
+  "description": "A minimalist, gamified daily challenge app with one task per day and a strict midnight deadline.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

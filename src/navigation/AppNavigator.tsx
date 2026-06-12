@@ -1,83 +1,178 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
-import { StyleSheet, Text } from 'react-native';
+import { NavigationContainer, DarkTheme, Theme as NavThemeBase } from '@react-navigation/native';
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { DailyChallengeScreen } from '../screens/DailyChallengeScreen';
+import { FeedScreen } from '../screens/FeedScreen';
+import { SquadsScreen } from '../screens/SquadsScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
-import { colors } from '../theme/colors';
+import { ConfigScreen } from '../screens/ConfigScreen';
+import { useScreenLayout } from '../hooks/useScreenLayout';
+import { useTheme } from '../theme/ThemeContext';
+import { Theme } from '../theme/themes';
 
 export type RootTabParamList = {
-  Today: undefined;
-  History: undefined;
+  Daily: undefined;
+  Feed: undefined;
+  Squads: undefined;
+  Trace: undefined;
+  Config: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const navTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.background,
-    card: colors.surface,
-    border: colors.border,
-    primary: colors.accent,
-    text: colors.text,
-  },
-};
+function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) {
+  return StyleSheet.create({
+    tabBar: {
+      backgroundColor: theme.colors.background,
+      borderTopColor: theme.colors.border,
+      borderTopWidth: 1,
+      height: layout.tabBar.height,
+      paddingBottom: 8,
+      paddingTop: 6,
+    },
+    tabLabel: {
+      fontFamily: theme.fonts.mono,
+      fontSize: layout.tabBar.labelFontSize,
+      letterSpacing: 1.5,
+      marginTop: 2,
+      textTransform: 'uppercase',
+    },
+  });
+}
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Today: '◎',
-    History: '▦',
-  };
+function TabIcon({
+  name,
+  focused,
+  theme,
+  size,
+}: {
+  name: 'crosshair' | 'globe' | 'users' | 'activity' | 'sliders';
+  focused: boolean;
+  theme: Theme;
+  size: number;
+}) {
+  const color = focused ? theme.colors.text : theme.colors.tabInactive;
+
   return (
-    <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>
-      {icons[label] ?? '•'}
-    </Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <Feather name={name} size={size} color={color} />
+    </View>
+  );
+}
+
+function NavigatorContent() {
+  const { theme } = useTheme();
+  const layout = useScreenLayout();
+  const styles = useMemo(() => createStyles(theme, layout), [theme, layout]);
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: theme.colors.text,
+        tabBarInactiveTintColor: theme.colors.tabInactive,
+        tabBarLabelStyle: styles.tabLabel,
+      }}
+    >
+      <Tab.Screen
+        name="Daily"
+        component={DailyChallengeScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              name="crosshair"
+              focused={focused}
+              theme={theme}
+              size={layout.tabBar.iconSize}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Feed"
+        component={FeedScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              name="globe"
+              focused={focused}
+              theme={theme}
+              size={layout.tabBar.iconSize}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Squads"
+        component={SquadsScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              name="users"
+              focused={focused}
+              theme={theme}
+              size={layout.tabBar.iconSize}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Trace"
+        component={HistoryScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              name="activity"
+              focused={focused}
+              theme={theme}
+              size={layout.tabBar.iconSize}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Config"
+        component={ConfigScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              name="sliders"
+              focused={focused}
+              theme={theme}
+              size={layout.tabBar.iconSize}
+            />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 
 export function AppNavigator() {
+  const { theme } = useTheme();
+
+  const navTheme: NavThemeBase = useMemo(
+    () => ({
+      ...DarkTheme,
+      dark: !theme.light,
+      colors: {
+        ...DarkTheme.colors,
+        background: theme.colors.background,
+        card: theme.colors.background,
+        border: theme.colors.border,
+        primary: theme.colors.accent,
+        text: theme.colors.text,
+      },
+    }),
+    [theme]
+  );
+
   return (
     <NavigationContainer theme={navTheme}>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.tabInactive,
-          tabBarLabelStyle: styles.tabLabel,
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label={route.name} focused={focused} />
-          ),
-        })}
-      >
-        <Tab.Screen name="Today" component={DailyChallengeScreen} />
-        <Tab.Screen name="History" component={HistoryScreen} />
-      </Tab.Navigator>
+      <NavigatorContent />
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    height: 88,
-    paddingBottom: 24,
-    paddingTop: 8,
-  },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  tabIcon: {
-    color: colors.tabInactive,
-    fontSize: 20,
-    marginBottom: 2,
-  },
-  tabIconFocused: {
-    color: colors.accent,
-  },
-});

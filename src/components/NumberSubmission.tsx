@@ -1,19 +1,51 @@
+import { useMemo } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { Theme } from '../theme/themes';
+import { useTheme } from '../theme/ThemeContext';
 
 interface NumberSubmissionProps {
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  fontSize?: number;
+}
+
+function createStyles(theme: Theme, fontSize: number) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+    },
+    input: {
+      backgroundColor: 'transparent',
+      borderBottomColor: theme.colors.border,
+      borderBottomWidth: 2,
+      color: theme.colors.text,
+      fontFamily: theme.fonts.mono,
+      fontSize,
+      lineHeight: fontSize + 6,
+      paddingBottom: 12,
+      textAlign: 'center',
+    },
+    inputFocused: {
+      borderBottomColor: theme.colors.accent,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+  });
 }
 
 export function NumberSubmission({
   value,
-  placeholder = 'Enter a number',
+  placeholder = '0',
   onChange,
   disabled = false,
+  fontSize = 56,
 }: NumberSubmissionProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme, fontSize), [theme, fontSize]);
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -21,7 +53,7 @@ export function NumberSubmission({
         value={value}
         onChangeText={(text) => onChange(text.replace(/[^0-9]/g, ''))}
         placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={`${theme.colors.textMuted}80`}
         keyboardType="number-pad"
         editable={!disabled}
         maxLength={10}
@@ -29,24 +61,3 @@ export function NumberSubmission({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  input: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: '700',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    textAlign: 'center',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-});

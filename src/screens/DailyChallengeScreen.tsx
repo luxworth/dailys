@@ -1,24 +1,169 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CountdownTimer } from '../components/CountdownTimer';
-import { StatusBadge } from '../components/StatusBadge';
 import { SubmissionForm } from '../components/SubmissionForm';
 import { useDailyChallenge } from '../hooks/useDailyChallenge';
-import { colors } from '../theme/colors';
-import { formatDisplayDate } from '../utils/dateUtils';
+import { useScreenLayout } from '../hooks/useScreenLayout';
+import { Theme } from '../theme/themes';
+import { useTheme } from '../theme/ThemeContext';
+
+function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) {
+  return StyleSheet.create({
+    safeArea: {
+      backgroundColor: theme.colors.background,
+      flex: 1,
+    },
+    loading: {
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center',
+    },
+    flex: {
+      flex: 1,
+    },
+    header: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.background,
+      borderBottomColor: theme.colors.border,
+      borderBottomWidth: 1,
+      flexDirection: 'row',
+      flexShrink: 0,
+      justifyContent: 'space-between',
+      paddingHorizontal: 24,
+      paddingVertical: layout.header.paddingVertical,
+    },
+    brand: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.mono,
+      fontSize: 14,
+      letterSpacing: 4,
+      textTransform: 'uppercase',
+    },
+    headerRight: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 16,
+    },
+    ghostBadge: {
+      position: 'relative',
+    },
+    ghostCount: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.text,
+      borderRadius: 4,
+      height: 14,
+      justifyContent: 'center',
+      position: 'absolute',
+      right: -4,
+      top: -4,
+      width: 14,
+    },
+    ghostCountText: {
+      color: theme.colors.buttonText,
+      fontFamily: theme.fonts.mono,
+      fontSize: 8,
+      fontWeight: '700',
+    },
+    streakRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 8,
+    },
+    streakLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.mono,
+      fontSize: 12,
+    },
+    streakPill: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    streakText: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.mono,
+      fontSize: 12,
+    },
+    taskSection: {
+      flex: 1,
+      minHeight: 0,
+      paddingHorizontal: 24,
+      paddingTop: layout.task.paddingTop,
+    },
+    taskBadge: {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 6,
+      marginBottom: layout.task.badgeMarginBottom,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    taskBadgeText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.mono,
+      fontSize: 10,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+    },
+    taskTitle: {
+      color: theme.colors.text,
+      fontFamily: theme.fonts.display,
+      fontSize: layout.task.titleFontSize,
+      letterSpacing: -0.5,
+      lineHeight: layout.task.titleLineHeight,
+      marginBottom: 4,
+    },
+  });
+}
+
+function statusAccentColor(
+  status: 'PENDING' | 'SUBMITTED' | 'FAILED',
+  theme: Theme
+): string {
+  if (status === 'SUBMITTED') return theme.colors.success;
+  if (status === 'FAILED') return theme.colors.danger;
+  return theme.colors.accent;
+}
 
 export function DailyChallengeScreen() {
-  const { loading, today, task, entry, status, streak, refresh, submit } =
-    useDailyChallenge();
+  const { theme } = useTheme();
+  const layout = useScreenLayout();
+  const styles = useMemo(() => createStyles(theme, layout), [theme, layout]);
+  const {
+    loading,
+    task,
+    entry,
+    status,
+    streak,
+    ghostsRemaining,
+    sequenceNumber,
+    closesAt,
+    isVerifying,
+    refresh,
+    submit,
+    deployGhost,
+  } = useDailyChallenge();
 
-  const handleMidnight = useCallback(() => {
+  const handleDeadline = useCallback(() => {
     refresh();
   }, [refresh]);
 
@@ -26,136 +171,79 @@ export function DailyChallengeScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
         </View>
       </SafeAreaView>
     );
   }
 
-  const isLocked = status !== 'PENDING';
+  const accent = statusAccentColor(status, theme);
+  const needsScroll = task.type === 'TEXT' && status === 'PENDING';
+
+  const content = (
+    <View style={styles.taskSection}>
+      <View style={styles.taskBadge}>
+        <Feather name="crosshair" size={10} color={accent} />
+        <Text style={styles.taskBadgeText}>
+          DAY {String(sequenceNumber).padStart(3, '0')} — {task.type}
+        </Text>
+      </View>
+
+      <Text style={styles.taskTitle} numberOfLines={layout.tight ? 3 : 4}>
+        {task.title}
+      </Text>
+
+      <SubmissionForm
+        task={task}
+        status={status}
+        onSubmit={submit}
+        onDeployGhost={deployGhost}
+        ghostsRemaining={ghostsRemaining}
+        disabled={status !== 'PENDING' || isVerifying}
+        existingSubmission={entry.submission}
+        layout={layout}
+      />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>dailys</Text>
-          <View style={styles.streakPill}>
-            <Text style={styles.streakEmoji}>🔥</Text>
-            <Text style={styles.streakText}>{streak} day streak</Text>
+          <Text style={styles.brand}>dailys.</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.streakRow}>
+              <Text style={styles.streakLabel}>STREAK</Text>
+              <View style={styles.streakPill}>
+                <MaterialCommunityIcons
+                  name="fire"
+                  size={12}
+                  color={theme.colors.accent}
+                />
+                <Text style={styles.streakText}>{streak}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.date}>{formatDisplayDate(today)}</Text>
+        <CountdownTimer closesAt={closesAt} onDeadline={handleDeadline} layout={layout} />
 
-        <View style={styles.card}>
-          <StatusBadge status={status} />
-
-          <Text style={styles.taskLabel}>Today's challenge</Text>
-          <Text style={styles.taskTitle}>{task.title}</Text>
-
-          <View style={styles.divider} />
-
-          <SubmissionForm
-            task={task}
-            onSubmit={submit}
-            disabled={isLocked}
-            existingSubmission={entry.submission}
-          />
-        </View>
-
-        <View style={styles.countdownCard}>
-          <CountdownTimer onMidnight={handleMidnight} />
-        </View>
-      </ScrollView>
+        {needsScroll ? (
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {content}
+          </ScrollView>
+        ) : (
+          <View style={styles.flex}>{content}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.background,
-    flex: 1,
-  },
-  loading: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  scroll: {
-    gap: 20,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  brand: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  streakPill: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  streakEmoji: {
-    fontSize: 14,
-  },
-  streakText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  date: {
-    color: colors.textMuted,
-    fontSize: 15,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 24,
-    borderWidth: 1,
-    gap: 16,
-    padding: 24,
-  },
-  taskLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  taskTitle: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    lineHeight: 36,
-  },
-  divider: {
-    backgroundColor: colors.border,
-    height: 1,
-    marginVertical: 4,
-  },
-  countdownCard: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingVertical: 24,
-  },
-});

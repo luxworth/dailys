@@ -1,70 +1,95 @@
 # dailys
 
-A minimalist, gamified daily challenge mobile app built with **React Native** and **Expo**.
+A minimalist, gamified daily challenge mobile app built with **React Native**, **Expo**, and a **FastAPI** backend.
 
-Every day you receive exactly one unique task. Complete it by submitting proof — a photo, number, or text answer — before midnight local time.
+Every day you receive exactly one global task. Complete it by submitting proof — a photo, number, or text answer — before your local midnight window closes.
 
 ## Features
 
-- **Daily Challenge** — One deterministic task per calendar day with bold typography and status tracking (Pending, Submitted, Failed)
-- **Dynamic submissions** — UI adapts to task type: camera/upload for images, number pad for counts, text field for open answers
-- **Midnight countdown** — Live timer until the next challenge unlocks
-- **History & streaks** — 30-day calendar grid (green = completed, red = missed) plus consecutive-day streak counter
-- **Offline-first** — All progress persisted locally via AsyncStorage
+- **Daily Challenge** — Server-issued task with live countdown to `closes_at`
+- **Dynamic submissions** — UI adapts to task type: camera/upload, number pad, or text field
+- **Feed blindfold** — Global feed unlocks only after you submit today's proof
+- **Squads** — Create or join a 5-person squad and compete on streak leaderboards
+- **Trace & history** — 30-day activity calendar and proof trace synced from the API
+- **Feed reactions** — React to other finishers' proofs (mind blown, laugh, respect)
+- **Ghost mode** — Rare tokens to shield a missed day
+- **Interaction feedback** — Server-driven haptics and sounds on submissions and ghost deploy
 
 ## Tech Stack
 
+**Mobile**
 - React Native + Expo SDK 56
-- TypeScript
-- React Navigation (bottom tabs)
-- AsyncStorage for local persistence
-- expo-image-picker for photo proof
+- TypeScript, React Navigation
+- SecureStore for JWT tokens
+- `EXPO_PUBLIC_API_URL` for API base URL
+
+**Backend**
+- FastAPI, PostgreSQL, Alembic
+- JWT auth, rate limiting, Docker deploy
+
+See [backend/README.md](backend/README.md) for API setup, Docker, and environment variables.
+
+## Getting Started
+
+### Backend
+
+```bash
+cd backend
+cp .env.example .env
+docker compose up -d
+# or: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Release today's challenge:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/internal/challenges/release \
+  -H "X-Internal-Key: $INTERNAL_API_KEY"
+```
+
+### Mobile
+
+```bash
+cp .env.example .env
+# Set EXPO_PUBLIC_API_URL (localhost, 10.0.2.2 for Android emulator, or LAN IP)
+npm install
+npm start
+```
+
+Use **Expo Go** or a simulator. The app requires a running API and account registration on first launch.
 
 ## Project Structure
 
 ```
 dailys/
-├── App.tsx                          # Root component
-├── app.json                         # Expo config
+├── App.tsx
 ├── src/
-│   ├── components/
-│   │   ├── CalendarGrid.tsx         # 30-day history calendar
-│   │   ├── CountdownTimer.tsx       # Midnight countdown
-│   │   ├── ImageSubmission.tsx      # Photo/camera input
-│   │   ├── NumberSubmission.tsx     # Numeric input
-│   │   ├── StatusBadge.tsx          # Pending/Submitted/Failed badge
-│   │   ├── SubmissionForm.tsx       # Dynamic form router + submit
-│   │   └── TextSubmission.tsx       # Text input
-│   ├── data/
-│   │   └── tasks.ts                 # Mock task database (10 tasks)
-│   ├── hooks/
-│   │   ├── useDailyChallenge.ts     # Today's challenge state
-│   │   └── useHistory.ts            # History & streak state
-│   ├── navigation/
-│   │   └── AppNavigator.tsx         # Bottom tab navigation
-│   ├── screens/
-│   │   ├── DailyChallengeScreen.tsx # Main daily view
-│   │   └── HistoryScreen.tsx        # Streak & calendar view
-│   ├── storage/
-│   │   └── storage.ts               # AsyncStorage layer
-│   ├── theme/
-│   │   └── colors.ts                # Dark mode palette
-│   ├── types/
-│   │   └── index.ts                 # Shared TypeScript types
-│   └── utils/
-│       ├── dateUtils.ts             # Date helpers & countdown
-│       ├── streakUtils.ts           # Streak calculation
-│       └── taskUtils.ts             # Daily task selection
+│   ├── api/           # HTTP client, auth, challenges, squads, history, reactions
+│   ├── context/       # AuthContext, ChallengeContext
+│   ├── screens/       # Daily, Feed, Squads, Trace (History)
+│   └── ...
+└── backend/           # FastAPI app, migrations, tests, Docker
 ```
 
-## Getting Started
+## Production setup
 
-```bash
-npm install
-npm start
-```
+### Backend (staging)
 
-Then scan the QR code with **Expo Go** on your phone, or press `i` for iOS simulator / `a` for Android emulator.
+1. `cd backend && cp .env.example .env` — set `ENVIRONMENT=staging`, secrets, and `CORS_ORIGINS`
+2. For cloud images: `STORAGE_BACKEND=s3`, bucket creds, and `S3_PUBLIC_BASE_URL`
+3. `docker compose up -d --build`
+4. Schedule cron: daily challenge release + weekly `close-week` (see [backend/README.md](backend/README.md))
+
+### Mobile
+
+1. `cp .env.example .env` — set `EXPO_PUBLIC_API_URL` to your API
+2. Optional: `EXPO_PUBLIC_SENTRY_DSN` for crash reporting
+3. `npx eas init` then set `EXPO_PUBLIC_EAS_PROJECT_ID` in `.env`
+4. Build: `eas build --profile preview` (requires Expo account)
+
+Bundle IDs: `com.dailys.app` (iOS + Android) — rename in `app.config.ts` before store submission.
+
+See **[DEPLOY.md](DEPLOY.md)** for the full final-gaps checklist, staging/production env templates, S3, cron, EAS, and troubleshooting.
 
 ## Task Types
 
@@ -73,10 +98,3 @@ Then scan the QR code with **Expo Go** on your phone, or press `i` for iOS simul
 | `NUMBER` | Count bathroom tiles | Number pad input |
 | `IMAGE` | Photo of a dog | Camera or photo library |
 | `TEXT` | Gratitude journal entry | Multiline text field |
-
-## Daily Logic
-
-1. Each calendar day maps to one task via a deterministic hash of the date string
-2. On app launch, any past `PENDING` entries are marked `FAILED`
-3. Submitting locks the answer for the day (`SUBMITTED`)
-4. At midnight local time, a new task unlocks automatically

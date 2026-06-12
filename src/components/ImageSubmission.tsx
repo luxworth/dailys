@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -8,21 +8,67 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors } from '../theme/colors';
+import { Theme } from '../theme/themes';
+import { useTheme } from '../theme/ThemeContext';
+import { Feather } from '@expo/vector-icons';
 
 interface ImageSubmissionProps {
   value: string;
   placeholder?: string;
   onChange: (uri: string) => void;
   disabled?: boolean;
+  maxHeight?: number;
+}
+
+function createStyles(theme: Theme, maxHeight: number) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+    },
+    placeholder: {
+      alignItems: 'center',
+      borderColor: theme.colors.border,
+      borderStyle: 'dashed',
+      borderWidth: 2,
+      gap: 12,
+      height: maxHeight,
+      justifyContent: 'center',
+      width: '100%',
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    placeholderText: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.mono,
+      fontSize: 10,
+      letterSpacing: 3,
+      textTransform: 'uppercase',
+    },
+    preview: {
+      height: maxHeight,
+      width: '100%',
+    },
+    changeText: {
+      color: theme.colors.accent,
+      fontFamily: theme.fonts.mono,
+      fontSize: 10,
+      letterSpacing: 2,
+      marginTop: 10,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+    },
+  });
 }
 
 export function ImageSubmission({
   value,
-  placeholder = 'Tap to capture or upload',
   onChange,
   disabled = false,
+  maxHeight = 180,
 }: ImageSubmissionProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme, maxHeight), [theme, maxHeight]);
   const [loading, setLoading] = useState(false);
 
   const pickImage = async (useCamera: boolean) => {
@@ -87,52 +133,12 @@ export function ImageSubmission({
           onPress={showOptions}
           disabled={disabled || loading}
         >
-          <Text style={styles.cameraIcon}>📷</Text>
+          <Feather name="camera" size={32} color={theme.colors.textMuted} />
           <Text style={styles.placeholderText}>
-            {loading ? 'Opening...' : placeholder}
+            {loading ? 'Opening...' : 'Tap to capture'}
           </Text>
         </Pressable>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  placeholder: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderStyle: 'dashed',
-    borderWidth: 1.5,
-    gap: 8,
-    justifyContent: 'center',
-    minHeight: 180,
-    padding: 24,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  cameraIcon: {
-    fontSize: 32,
-  },
-  placeholderText: {
-    color: colors.textMuted,
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  preview: {
-    borderRadius: 16,
-    height: 220,
-    width: '100%',
-  },
-  changeText: {
-    color: colors.accent,
-    fontSize: 14,
-    marginTop: 10,
-    textAlign: 'center',
-  },
-});

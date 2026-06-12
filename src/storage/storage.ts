@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GHOST_SUBMISSION } from '../types/prefs';
 import { AppState, DayEntry } from '../types';
 import { getLocalDateString } from '../utils/dateUtils';
 import { getTaskForDate } from '../utils/taskUtils';
@@ -74,6 +75,32 @@ export async function submitToday(
         ...entry,
         status: 'SUBMITTED',
         submission,
+        submittedAt: new Date().toISOString(),
+      },
+    },
+  };
+
+  await saveAppState(nextState);
+  return nextState;
+}
+
+export async function deployGhostToday(
+  state: AppState,
+  today: string = getLocalDateString()
+): Promise<AppState> {
+  const entry = state.entries[today] ?? createPendingEntry(today);
+
+  if (entry.status !== 'PENDING' && entry.status !== 'FAILED') {
+    return state;
+  }
+
+  const nextState: AppState = {
+    entries: {
+      ...state.entries,
+      [today]: {
+        ...entry,
+        status: 'SUBMITTED',
+        submission: GHOST_SUBMISSION,
         submittedAt: new Date().toISOString(),
       },
     },

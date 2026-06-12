@@ -1,15 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AppState, CompletionStatus, DayEntry, Task } from '../types';
-import {
-  getEntryForDate,
-  initializeAppState,
-  reconcileExpiredDays,
-  saveAppState,
-  submitToday,
-} from '../storage/storage';
-import { getLocalDateString } from '../utils/dateUtils';
-import { calculateStreak } from '../utils/streakUtils';
-import { getTaskById, getTaskForDate } from '../utils/taskUtils';
+import { useChallenge } from '../context/ChallengeContext';
+import { CompletionStatus, DayEntry, Task } from '../types';
 
 interface DailyChallengeState {
   loading: boolean;
@@ -18,64 +8,57 @@ interface DailyChallengeState {
   entry: DayEntry;
   status: CompletionStatus;
   streak: number;
+  ghostsRemaining: number;
+  isVerifying: boolean;
+  error: string | null;
+  sequenceNumber: number;
+  closesAt: string | null;
   refresh: () => Promise<void>;
   submit: (value: string) => Promise<boolean>;
+  deployGhost: () => Promise<boolean>;
 }
 
 export function useDailyChallenge(): DailyChallengeState {
-  const [appState, setAppState] = useState<AppState>({ entries: {} });
-  const [loading, setLoading] = useState(true);
-  const [today, setToday] = useState(getLocalDateString());
+  const {
+    loading,
+    today,
+    task,
+    status,
+    streak,
+    ghostsRemaining,
+    isVerifying,
+    error,
+    sequenceNumber,
+    closesAt,
+    submissionPreview,
+    challenge,
+    refresh,
+    submit,
+    deployGhost,
+  } = useChallenge();
 
-  const load = useCallback(async () => {
-    const currentToday = getLocalDateString();
-    setToday(currentToday);
-    const state = await initializeAppState();
-    setAppState(state);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const refresh = useCallback(async () => {
-    const currentToday = getLocalDateString();
-    if (currentToday !== today) {
-      setToday(currentToday);
-    }
-    const reconciled = reconcileExpiredDays(appState, currentToday);
-    if (JSON.stringify(reconciled) !== JSON.stringify(appState)) {
-      await saveAppState(reconciled);
-      setAppState(reconciled);
-    }
-  }, [appState, today]);
-
-  const submit = useCallback(
-    async (value: string): Promise<boolean> => {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return false;
-      }
-      const nextState = await submitToday(appState, trimmed, today);
-      setAppState(nextState);
-      return true;
-    },
-    [appState, today]
-  );
-
-  const entry = getEntryForDate(appState, today);
-  const task = getTaskById(entry.taskId) ?? getTaskForDate(today);
-  const streak = calculateStreak(appState.entries, today);
+  const entry: DayEntry = {
+    date: today,
+    taskId: task.id,
+    status,
+    submission: submissionPreview,
+    submittedAt: challenge?.submission?.submitted_at ?? undefined,
+  };
 
   return {
     loading,
     today,
     task,
     entry,
-    status: entry.status,
+    status,
     streak,
+    ghostsRemaining,
+    isVerifying,
+    error,
+    sequenceNumber,
+    closesAt,
     refresh,
     submit,
+    deployGhost,
   };
 }

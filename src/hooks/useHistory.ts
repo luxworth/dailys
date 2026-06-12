@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, CompletionStatus } from '../types';
-import { initializeAppState } from '../storage/storage';
-import { getLocalDateString } from '../utils/dateUtils';
-import { calculateStreak, getHistoryDays } from '../utils/streakUtils';
+
+import { getUserHistory } from '../api/history';
+import { mapHistoryDayStatus } from '../api/statusMap';
+import { CompletionStatus } from '../types';
+import { TraceEntry } from '../utils/traceUtils';
+import { useAuth } from '../context/AuthContext';
 
 interface HistoryDay {
   date: string;
@@ -13,31 +15,59 @@ interface HistoryState {
   loading: boolean;
   streak: number;
   days: HistoryDay[];
+  trace: TraceEntry[];
   refresh: () => Promise<void>;
 }
 
 export function useHistory(): HistoryState {
-  const [appState, setAppState] = useState<AppState>({ entries: {} });
+  const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
+  const [days, setDays] = useState<HistoryDay[]>([]);
+  const [trace, setTrace] = useState<TraceEntry[]>([]);
 
   const load = useCallback(async () => {
-    const state = await initializeAppState();
-    setAppState(state);
-    setLoading(false);
-  }, []);
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const history = await getUserHistory();
+      setStreak(history.streak);
+      setDays(
+        history.days.map((day) => ({
+          date: day.date,
+          status: mapHistoryDayStatus(day.status),
+        }))
+      );
+      setTrace(
+        history.trace.map((entry) => ({
+          date: entry.date,
+          title: entry.title,
+          type: entry.task_type,
+          submission: entry.submission_preview,
+        }))
+      );
+    } catch {
+      setStreak(0);
+      setDays([]);
+      setTrace([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const today = getLocalDateString();
-  const streak = calculateStreak(appState.entries, today);
-  const days = getHistoryDays(appState.entries, 30);
-
   return {
     loading,
     streak,
     days,
+    trace,
     refresh: load,
   };
 }
