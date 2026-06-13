@@ -23,6 +23,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
+COPY scripts/seed.py ./scripts/seed.py
 
 RUN sed -i 's/\r$//' ./scripts/entrypoint.sh \
     && chmod +x ./scripts/entrypoint.sh \

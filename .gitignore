@@ -33,9 +33,17 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+backend/.env
 
 # typescript
 *.tsbuildinfo
+
+# python
+__pycache__/
+*.py[cod]
+
+# local uploads (dev)
+backend/uploads/
 
 # generated native folders
 /ios

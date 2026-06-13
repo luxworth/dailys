@@ -14,6 +14,6 @@ finishers AS (
     JOIN active_challenge ac ON ac.id = s.challenge_id
     WHERE s.status = 'SUCCESS'
 )
-SELECT ROUND(pct * 100, 2)
+SELECT ROUND((pct * 100)::numeric, 2)
 FROM finishers
 WHERE user_id = :user_id

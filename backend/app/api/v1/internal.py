@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -10,6 +10,7 @@ from app.schemas import (
     ChallengeTodayResponse,
     CloseWeekResponse,
     EliminationSummary,
+    ErrorResponse,
     TaskInfo,
 )
 from app.services.challenge_release import release_next_challenge
@@ -23,7 +24,16 @@ async def internal_release_challenge(
     db: AsyncSession = Depends(get_async_session),
     _: None = Depends(require_internal_key),
 ) -> ChallengeTodayResponse:
-    challenge = await release_next_challenge(db)
+    try:
+        challenge = await release_next_challenge(db)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ErrorResponse(
+                code="NO_TASK_TEMPLATES",
+                message=str(exc) if str(exc) else "Task templates are not seeded.",
+            ).model_dump(),
+        ) from exc
     await db.commit()
 
     result = await db.execute(

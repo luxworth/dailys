@@ -258,19 +258,26 @@ export function SquadsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const [mySquad, pct] = await Promise.all([getMySquad(), getPercentile()]);
-      setPercentile(pct);
+      const mySquad = await getMySquad();
       setSquad(mySquad);
+
+      try {
+        const pct = await getPercentile();
+        setPercentile(pct);
+      } catch {
+        setPercentile(null);
+      }
+
       if (mySquad) {
         const leaderboard = await getSquadLeaderboard(mySquad.squad_id);
         setEntries(leaderboard.entries);
       } else {
         setEntries([]);
       }
-    } catch {
+    } catch (err) {
       setSquad(null);
       setEntries([]);
-      setError('Failed to load squad data.');
+      setError(err instanceof ApiRequestError ? err.message : 'Failed to load squad data.');
     } finally {
       setLoading(false);
     }
