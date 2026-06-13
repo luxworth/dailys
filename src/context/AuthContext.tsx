@@ -9,8 +9,10 @@ import {
 } from 'react';
 
 import { getMe, loginUser, logoutUser, registerUser } from '../api/auth';
+import { updatePushToken } from '../api/users';
 import { getRefreshToken } from '../api/tokenStorage';
 import { LoginRequest, RegisterRequest, UserPublic } from '../api/types';
+import { registerForPushNotificationsAsync } from '../notifications/pushNotifications';
 
 interface AuthContextValue {
   user: UserPublic | null;
@@ -48,6 +50,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    void (async () => {
+      const token = await registerForPushNotificationsAsync();
+      if (!token) {
+        return;
+      }
+      try {
+        await updatePushToken(token);
+      } catch {
+        // Push registration is best-effort; squads still work without it.
+      }
+    })();
+  }, [user]);
 
   const register = useCallback(async (payload: RegisterRequest) => {
     await registerUser(payload);

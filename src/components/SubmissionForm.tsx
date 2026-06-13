@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { CrtText } from './CrtText';
 import { CompletionStatus, Task } from '../types';
 import { GHOST_SUBMISSION } from '../types/prefs';
 import { ScreenLayoutMetrics, useScreenLayout } from '../hooks/useScreenLayout';
@@ -223,9 +224,9 @@ export function SubmissionForm({
             <Feather name="lock" size={32} color={theme.colors.success} />
           )}
         </View>
-        <Text style={[styles.statusLabel, { color: theme.colors.success }]}>
+        <CrtText style={[styles.statusLabel, { color: theme.colors.success }]}>
           {isGhostSubmission ? 'Streak Saved' : 'Proof Recorded'}
-        </Text>
+        </CrtText>
         <Text style={styles.statusHint}>
           {isGhostSubmission
             ? 'The ghost walks in your place. Return tomorrow.'
@@ -235,7 +236,7 @@ export function SubmissionForm({
           {task.type === 'IMAGE' && existingSubmission && !isGhostSubmission ? (
             <Image source={{ uri: existingSubmission }} style={styles.proofImage} />
           ) : (
-            <Text style={styles.proofText}>{existingSubmission}</Text>
+            <CrtText style={styles.proofText}>{existingSubmission}</CrtText>
           )}
         </View>
       </View>
@@ -263,7 +264,7 @@ export function SubmissionForm({
             ) : (
               <>
                 <Feather name="moon" size={14} color={theme.colors.text} />
-                <Text style={styles.ghostButtonText}>Deploy Ghost Mode</Text>
+                <CrtText style={styles.ghostButtonText}>Deploy Ghost Mode</CrtText>
               </>
             )}
           </Pressable>

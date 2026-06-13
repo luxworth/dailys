@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { CrtText } from '../components/CrtText';
 import { getTodayFeed } from '../api/challenges';
 import { deleteReaction, upsertReaction } from '../api/reactions';
 import { ApiReactionType, FeedItem } from '../api/types';
@@ -328,11 +329,11 @@ export function FeedScreen() {
             <View style={styles.postTop}>
               <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
                 <Feather name="crosshair" size={10} color={theme.colors.accent} />
-                <Text style={styles.postUser}>{post.username}</Text>
+                <CrtText style={styles.postUser}>{post.username}</CrtText>
               </View>
               <Text style={styles.postTime}>{formatPostTime(post.submitted_at)}</Text>
             </View>
-            <Text style={styles.postProof}>{post.proof_preview}</Text>
+            <CrtText style={styles.postProof}>{post.proof_preview}</CrtText>
             <View style={styles.reactions}>
               {REACTIONS.map((reaction) => (
                 <ReactionButton
@@ -353,7 +354,7 @@ export function FeedScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Global Feed</Text>
+        <CrtText style={styles.headerTitle}>Global Feed</CrtText>
         <Text style={styles.headerMeta}>DAY {String(sequenceNumber).padStart(3, '0')}</Text>
       </View>
 
@@ -372,7 +373,7 @@ export function FeedScreen() {
             <View style={styles.lockBox}>
               <Feather name="eye-off" size={32} color={theme.colors.textMuted} />
             </View>
-            <Text style={styles.lockTitle}>Feed Locked</Text>
+            <CrtText style={styles.lockTitle}>Feed Locked</CrtText>
             <Text style={styles.lockBody}>
               You must submit today's proof to unlock the global feed.
             </Text>

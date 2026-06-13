@@ -36,3 +36,17 @@ export async function getPercentile(): Promise<number | null> {
   const result = await apiFetch<PercentileResponse>('/api/v1/users/me/percentile');
   return result.percentile;
 }
+
+export interface SquadNudgeResponse {
+  delivered: boolean;
+}
+
+export async function nudgeSquadMember(
+  squadId: string,
+  userId: string
+): Promise<SquadNudgeResponse> {
+  return apiFetch<SquadNudgeResponse>(`/api/v1/squads/${squadId}/nudge`, {
+    method: 'POST',
+    body: { user_id: userId },
+  });
+}

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { CrtText } from '../components/CrtText';
 import * as Localization from 'expo-localization';
 import { ApiRequestError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -385,10 +386,10 @@ export function OnboardingScreen({ onComplete, startAtAuth = false }: Onboarding
             color={theme.colors.textMuted}
             style={{ alignSelf: 'flex-start', marginBottom: 12 }}
           />
-          <Text style={styles.visualLabel}>COUNTDOWN</Text>
-          <Text style={styles.visualCountdown}>14:59:59</Text>
+          <CrtText accent style={styles.visualLabel}>COUNTDOWN</CrtText>
+          <CrtText style={styles.visualCountdown}>14:59:59</CrtText>
           <View style={styles.visualMission}>
-            <Text style={styles.visualMissionText}>████████ MISSION ████████</Text>
+            <CrtText style={styles.visualMissionText}>████████ MISSION ████████</CrtText>
           </View>
         </View>
       );
@@ -408,11 +409,11 @@ export function OnboardingScreen({ onComplete, startAtAuth = false }: Onboarding
     if (currentSlide === 2) {
       return (
         <View style={styles.visualBox}>
-          <Text style={styles.visualLabel}>CURRENT STREAK</Text>
-          <Text style={styles.visualCountdown}>42</Text>
+          <CrtText accent style={styles.visualLabel}>CURRENT STREAK</CrtText>
+          <CrtText style={styles.visualCountdown}>42</CrtText>
           <View style={styles.secondaryButton}>
             <Feather name="shield" size={14} color={theme.colors.accent} />
-            <Text style={styles.secondaryButtonText}>Deploy Ghost Token</Text>
+            <CrtText style={styles.secondaryButtonText}>Deploy Ghost Token</CrtText>
           </View>
         </View>
       );
@@ -436,9 +437,9 @@ export function OnboardingScreen({ onComplete, startAtAuth = false }: Onboarding
           </View>
           {[1, 2, 3].map((i) => (
             <View key={i} style={styles.squadPreviewRow}>
-              <Text style={{ color: theme.colors.text, fontFamily: theme.fonts.mono, fontSize: 11 }}>
+              <CrtText style={{ color: theme.colors.text, fontFamily: theme.fonts.mono, fontSize: 11 }}>
                 USER_00{i}
-              </Text>
+              </CrtText>
               <Text style={{ color: theme.colors.textMuted, fontFamily: theme.fonts.mono, fontSize: 10 }}>
                 {50 - i * 5} DAYS
               </Text>
@@ -487,12 +488,16 @@ export function OnboardingScreen({ onComplete, startAtAuth = false }: Onboarding
       >
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View>
-            <Text style={[styles.slideLabel, isAuthSlide && styles.slideLabelAccent]}>
+            <CrtText
+              accent={isAuthSlide}
+              muted={!isAuthSlide}
+              style={[styles.slideLabel, isAuthSlide && styles.slideLabelAccent]}
+            >
               {isAuthSlide
                 ? 'SECURE TERMINAL'
                 : `INIT SEQUENCE [${currentSlide + 1}/${TOTAL_SLIDES - 1}]`}
-            </Text>
-            <Text style={styles.headline}>{slide.headline}</Text>
+            </CrtText>
+            <CrtText style={styles.headline}>{slide.headline}</CrtText>
             <Text style={styles.body}>{slide.body}</Text>
           </View>
 
@@ -545,9 +550,9 @@ export function OnboardingScreen({ onComplete, startAtAuth = false }: Onboarding
                 )}
               </Pressable>
               <Pressable onPress={() => setLoginMode((mode) => !mode)}>
-                <Text style={styles.toggleText}>
+                <CrtText accent style={styles.toggleText}>
                   {loginMode ? 'Create new account' : 'Already registered? Sign in'}
-                </Text>
+                </CrtText>
               </Pressable>
             </View>
           ) : (

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { DailyChallengeScreen } from '../screens/DailyChallengeScreen';
+import { CrtText } from '../components/CrtText';
 import { FeedScreen } from '../screens/FeedScreen';
 import { SquadsScreen } from '../screens/SquadsScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
@@ -74,7 +75,14 @@ function NavigatorContent() {
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: theme.colors.text,
         tabBarInactiveTintColor: theme.colors.tabInactive,
-        tabBarLabelStyle: styles.tabLabel,
+        tabBarLabel: ({ children, color }) => (
+          <CrtText
+            muted={color === theme.colors.tabInactive}
+            style={[styles.tabLabel, { color }]}
+          >
+            {children}
+          </CrtText>
+        ),
       }}
     >
       <Tab.Screen

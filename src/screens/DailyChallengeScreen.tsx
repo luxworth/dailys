@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { CrtText } from '../components/CrtText';
 import { SubmissionForm } from '../components/SubmissionForm';
 import { useDailyChallenge } from '../hooks/useDailyChallenge';
 import { useScreenLayout } from '../hooks/useScreenLayout';
@@ -189,9 +190,9 @@ export function DailyChallengeScreen() {
         </Text>
       </View>
 
-      <Text style={styles.taskTitle} numberOfLines={layout.tight ? 3 : 4}>
+      <CrtText style={styles.taskTitle} numberOfLines={layout.tight ? 3 : 4}>
         {task.title}
-      </Text>
+      </CrtText>
 
       <SubmissionForm
         task={task}
@@ -213,7 +214,7 @@ export function DailyChallengeScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>dailys.</Text>
+          <CrtText style={styles.brand}>dailys.</CrtText>
           <View style={styles.headerRight}>
             <View style={styles.streakRow}>
               <Text style={styles.streakLabel}>STREAK</Text>
@@ -223,7 +224,7 @@ export function DailyChallengeScreen() {
                   size={12}
                   color={theme.colors.accent}
                 />
-                <Text style={styles.streakText}>{streak}</Text>
+                <CrtText style={styles.streakText}>{streak}</CrtText>
               </View>
             </View>
           </View>

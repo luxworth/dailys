@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { CrtText } from '../components/CrtText';
 import { useAuth } from '../context/AuthContext';
 import { ScreenLayoutMetrics, useScreenLayout } from '../hooks/useScreenLayout';
 import { Theme, ThemeId, THEMES } from '../theme/themes';
@@ -164,7 +165,7 @@ export function ConfigScreen() {
             color={theme.colors.accent}
             style={{ marginBottom: layout.hero.iconMarginBottom, opacity: 0.8 }}
           />
-          <Text style={styles.heroTitle}>Config</Text>
+          <CrtText style={styles.heroTitle}>Config</CrtText>
           <Text style={styles.heroSubtitle}>System Prefs</Text>
         </View>
 
@@ -173,7 +174,7 @@ export function ConfigScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.sectionTitle}>Themes</Text>
+          <CrtText style={styles.sectionTitle}>Themes</CrtText>
           <View style={styles.themeList}>
             {THEME_OPTIONS.map((id) => {
               const option = THEMES[id];
@@ -189,14 +190,15 @@ export function ConfigScreen() {
                   ]}
                 >
                   <View>
-                    <Text
-                      style={[
-                        styles.themeName,
-                        active ? styles.themeTextActive : styles.themeTextInactive,
-                      ]}
-                    >
-                      {option.name}
-                    </Text>
+                    {active ? (
+                      <CrtText style={[styles.themeName, styles.themeTextActive]}>
+                        {option.name}
+                      </CrtText>
+                    ) : (
+                      <Text style={[styles.themeName, styles.themeTextInactive]}>
+                        {option.name}
+                      </Text>
+                    )}
                     <Text
                       style={[
                         styles.themeDesc,

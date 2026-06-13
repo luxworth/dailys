@@ -138,3 +138,58 @@ async def test_leaderboard_today_status(client, db_session):
     assert leaderboard.status_code == 200
     entry = leaderboard.json()["entries"][0]
     assert entry["today_status"] == "PENDING"
+
+
+@pytest.mark.asyncio
+async def test_nudge_teammate(client, monkeypatch):
+    async def fake_push(*_args, **_kwargs):
+        return True
+
+    monkeypatch.setattr("app.services.nudges.send_expo_push", fake_push)
+
+    await client.post("/api/v1/internal/challenges/release", headers=internal_headers())
+    creator = await register_user(client, "nudger")
+    creator_headers = auth_headers(creator)
+
+    created = await client.post(
+        "/api/v1/squads",
+        json={"name": "Nudge Squad"},
+        headers=creator_headers,
+    )
+    squad_id = created.json()["squad_id"]
+    invite_code = created.json()["invite_code"]
+
+    joiner = await register_user(client, "slacker")
+    joiner_headers = auth_headers(joiner)
+    joined = await client.post(
+        "/api/v1/squads/join",
+        json={"invite_code": invite_code},
+        headers=joiner_headers,
+    )
+    assert joined.status_code == 200
+
+    joiner_me = await client.get("/api/v1/auth/me", headers=joiner_headers)
+    joiner_id = joiner_me.json()["id"]
+
+    token_update = await client.put(
+        "/api/v1/users/me/push-token",
+        json={"expo_push_token": "ExponentPushToken[test-token]"},
+        headers=joiner_headers,
+    )
+    assert token_update.status_code == 204
+
+    nudge = await client.post(
+        f"/api/v1/squads/{squad_id}/nudge",
+        json={"user_id": joiner_id},
+        headers=creator_headers,
+    )
+    assert nudge.status_code == 200
+    assert nudge.json()["delivered"] is True
+
+    duplicate = await client.post(
+        f"/api/v1/squads/{squad_id}/nudge",
+        json={"user_id": joiner_id},
+        headers=creator_headers,
+    )
+    assert duplicate.status_code == 409
+    assert duplicate.json()["code"] == "ALREADY_NUDGED"

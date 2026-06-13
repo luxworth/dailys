@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CalendarGrid } from '../components/CalendarGrid';
+import { CrtText } from '../components/CrtText';
 import { TrophyRoom } from '../components/TrophyRoom';
 import { useHistory } from '../hooks/useHistory';
 import { ScreenLayoutMetrics, useScreenLayout } from '../hooks/useScreenLayout';
@@ -30,9 +31,11 @@ function createStyles(theme: Theme, layout: ScreenLayoutMetrics) {
       flex: 1,
       justifyContent: 'center',
     },
-    flex: {
+    scroll: {
       flex: 1,
-      minHeight: 0,
+    },
+    scrollContent: {
+      paddingBottom: 24,
     },
     hero: {
       alignItems: 'center',
@@ -83,12 +86,9 @@ function createStyles(theme: Theme, layout: ScreenLayoutMetrics) {
       fontFamily: theme.fonts.mono,
       fontSize: 10,
     },
-    traceScroll: {
-      flex: 1,
-    },
-    traceScrollContent: {
+    traceSection: {
       padding: section.padding,
-      paddingBottom: 16,
+      paddingTop: 0,
     },
     traceList: {
       gap: trace.cardGap,
@@ -184,7 +184,11 @@ export function HistoryScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.flex}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.hero}>
           <MaterialCommunityIcons
             name="fire"
@@ -192,13 +196,13 @@ export function HistoryScreen() {
             color={theme.colors.accent}
             style={{ marginBottom: layout.hero.iconMarginBottom, opacity: 0.8 }}
           />
-          <Text style={styles.streakNumber}>{streak}</Text>
+          <CrtText style={styles.streakNumber}>{streak}</CrtText>
           <Text style={styles.streakLabel}>Current Streak</Text>
         </View>
 
         <View style={styles.calendarSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>30-Day Activity</Text>
+            <CrtText style={styles.sectionTitle}>30-Day Activity</CrtText>
             {rangeStart && rangeEnd && (
               <Text style={styles.sectionRange}>
                 {formatShortDate(rangeStart)} — {formatShortDate(rangeEnd)}
@@ -210,14 +214,10 @@ export function HistoryScreen() {
 
         <TrophyRoom layout={layout} />
 
-        <ScrollView
-          style={styles.traceScroll}
-          contentContainerStyle={styles.traceScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[styles.sectionTitle, { marginBottom: layout.section.titleMarginBottom }]}>
+        <View style={styles.traceSection}>
+          <CrtText style={[styles.sectionTitle, { marginBottom: layout.section.titleMarginBottom }]}>
             Proof Trace
-          </Text>
+          </CrtText>
 
           {trace.length === 0 ? (
             <Text style={styles.emptyTrace}>
@@ -236,19 +236,19 @@ export function HistoryScreen() {
                     </View>
                     <Text style={styles.traceType}>{item.type}</Text>
                   </View>
-                  <Text style={styles.traceTitle}>{item.title}</Text>
+                  <CrtText style={styles.traceTitle}>{item.title}</CrtText>
                   <Text style={styles.traceProof}>
                     Proof:{' '}
-                    <Text style={styles.traceProofValue}>
+                    <CrtText style={styles.traceProofValue}>
                       {formatSubmissionPreview(item.type, item.submission)}
-                    </Text>
+                    </CrtText>
                   </Text>
                 </View>
               ))}
             </View>
           )}
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

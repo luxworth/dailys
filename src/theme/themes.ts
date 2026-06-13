@@ -1,3 +1,5 @@
+import { TextStyle } from 'react-native';
+
 export type ThemeId =
   | 'typewriter-ritual'
   | 'arcade-ledger'
@@ -27,6 +29,11 @@ export interface ThemeFonts {
   mono: string;
 }
 
+export interface ThemeGlow {
+  text: TextStyle;
+  accent: TextStyle;
+}
+
 export interface Theme {
   id: ThemeId;
   name: string;
@@ -34,7 +41,20 @@ export interface Theme {
   colors: ThemeColors;
   fonts: ThemeFonts;
   light: boolean;
+  glow?: ThemeGlow;
 }
+
+const ARCADE_CRT_TEXT_GLOW: TextStyle = {
+  textShadowColor: 'rgba(69, 255, 106, 0.55)',
+  textShadowOffset: { width: 0, height: 0 },
+  textShadowRadius: 10,
+};
+
+const ARCADE_CRT_ACCENT_GLOW: TextStyle = {
+  textShadowColor: 'rgba(0, 229, 255, 0.5)',
+  textShadowOffset: { width: 0, height: 0 },
+  textShadowRadius: 8,
+};
 
 export const THEMES: Record<ThemeId, Theme> = {
   'typewriter-ritual': {
@@ -87,6 +107,10 @@ export const THEMES: Record<ThemeId, Theme> = {
       display: 'IBMPlexMono_700Bold',
       sans: 'IBMPlexMono_400Regular',
       mono: 'IBMPlexMono_500Medium',
+    },
+    glow: {
+      text: ARCADE_CRT_TEXT_GLOW,
+      accent: ARCADE_CRT_ACCENT_GLOW,
     },
   },
   'field-notes': {

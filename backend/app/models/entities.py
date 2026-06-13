@@ -41,6 +41,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(Text)
     timezone: Mapped[str] = mapped_column(String(64), default="UTC")
+    expo_push_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     submissions: Mapped[list["Submission"]] = relationship(back_populates="user")
@@ -206,3 +207,25 @@ class SquadWeekResult(Base):
 
     squad_week: Mapped[SquadWeek] = relationship(back_populates="results")
     user: Mapped[User] = relationship()
+
+
+class SquadNudge(Base):
+    __tablename__ = "squad_nudges"
+    __table_args__ = (
+        UniqueConstraint(
+            "sender_id",
+            "recipient_id",
+            "challenge_id",
+            name="uq_squad_nudges_sender_recipient_challenge",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sender_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    challenge_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("challenges.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    sender: Mapped[User] = relationship(foreign_keys=[sender_id])
+    recipient: Mapped[User] = relationship(foreign_keys=[recipient_id])
+    challenge: Mapped[Challenge] = relationship()

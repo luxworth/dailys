@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { CrtText } from './CrtText';
 import { ScreenLayoutMetrics } from '../hooks/useScreenLayout';
 import { useScreenLayout } from '../hooks/useScreenLayout';
 import { CompletionStatus } from '../types';
@@ -89,16 +90,26 @@ export function CalendarGrid({ days, layout: layoutProp }: CalendarGridProps) {
               visual === 'empty' && styles.cellEmpty,
             ]}
           >
-            <Text
-              style={[
-                styles.dayNumber,
-                visual === 'completed' && styles.dayCompleted,
-                visual === 'failed' && styles.dayFailed,
-                visual === 'empty' && styles.dayEmpty,
-              ]}
-            >
-              {dayNum}
-            </Text>
+            {visual === 'completed' ? (
+              <CrtText
+                style={[
+                  styles.dayNumber,
+                  styles.dayCompleted,
+                ]}
+              >
+                {dayNum}
+              </CrtText>
+            ) : (
+              <Text
+                style={[
+                  styles.dayNumber,
+                  visual === 'failed' && styles.dayFailed,
+                  visual === 'empty' && styles.dayEmpty,
+                ]}
+              >
+                {dayNum}
+              </Text>
+            )}
           </View>
         );
       })}

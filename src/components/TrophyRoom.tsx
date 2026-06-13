@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { CrtText } from './CrtText';
 import { ScreenLayoutMetrics } from '../hooks/useScreenLayout';
 import { Theme } from '../theme/themes';
 import { useTheme } from '../theme/ThemeContext';
@@ -115,7 +116,7 @@ export function TrophyRoom({ layout }: { layout: ScreenLayoutMetrics }) {
   return (
     <View style={styles.section}>
       <View style={styles.header}>
-        <Text style={styles.title}>Trophy Room</Text>
+        <CrtText style={styles.title}>Trophy Room</CrtText>
         <Text style={styles.subtitle}>DIGITAL TOYS</Text>
       </View>
       <View style={styles.grid}>

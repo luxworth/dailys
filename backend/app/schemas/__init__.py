@@ -219,6 +219,22 @@ class MySquadResponse(BaseModel):
     max_members: int = 5
 
 
+class PushTokenUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expo_push_token: str = Field(min_length=1, max_length=255)
+
+
+class SquadNudgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    user_id: UUID
+
+
+class SquadNudgeResponse(BaseModel):
+    delivered: bool
+
+
 class EliminationSummary(BaseModel):
     squad_id: UUID
     user_id: UUID

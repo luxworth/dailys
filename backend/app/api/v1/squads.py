@@ -10,15 +10,19 @@ from app.models import ItemType, User, UserItem
 from app.schemas import (
     MySquadResponse,
     PercentileResponse,
+    PushTokenUpdate,
     SquadCreate,
     SquadCreatedResponse,
     SquadJoin,
     SquadLeaderboardResponse,
+    SquadNudgeRequest,
+    SquadNudgeResponse,
     StreakResponse,
     UserHistoryResponse,
     UserItemsResponse,
 )
 from app.services.history import get_user_history
+from app.services.nudges import send_squad_nudge, update_push_token
 from app.services.squads import create_squad, get_my_squad, get_squad_leaderboard, join_squad, leave_squad
 from app.services.streak import calculate_percentile, calculate_streak
 
@@ -59,6 +63,15 @@ async def leave_squad_endpoint(
     await leave_squad(db, user)
 
 
+@router.put("/users/me/push-token", status_code=status.HTTP_204_NO_CONTENT)
+async def update_push_token_endpoint(
+    body: PushTokenUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> None:
+    await update_push_token(db, user, body.expo_push_token)
+
+
 @router.get("/squads/{squad_id}/leaderboard", response_model=SquadLeaderboardResponse)
 async def squad_leaderboard(
     squad_id: UUID,
@@ -66,6 +79,16 @@ async def squad_leaderboard(
     db: AsyncSession = Depends(get_async_session),
 ) -> SquadLeaderboardResponse:
     return await get_squad_leaderboard(db, squad_id)
+
+
+@router.post("/squads/{squad_id}/nudge", response_model=SquadNudgeResponse)
+async def nudge_squad_member(
+    squad_id: UUID,
+    body: SquadNudgeRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> SquadNudgeResponse:
+    return await send_squad_nudge(db, user, squad_id, body.user_id)
 
 
 @router.get("/users/me/streak", response_model=StreakResponse)

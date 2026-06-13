@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { CrtText } from './CrtText';
 import { ScreenLayoutMetrics, useScreenLayout } from '../hooks/useScreenLayout';
 import { Theme } from '../theme/themes';
 import { useTheme } from '../theme/ThemeContext';
@@ -91,7 +92,7 @@ export function CountdownTimer({ closesAt, onDeadline, layout: layoutProp }: Cou
   return (
     <View style={styles.container}>
       <Text style={styles.label}>TIME REMAINING</Text>
-      <Text style={styles.timer}>{closesAt ? formatCountdown(remaining) : '--:--:--'}</Text>
+      <CrtText style={styles.timer}>{closesAt ? formatCountdown(remaining) : '--:--:--'}</CrtText>
       <Text style={styles.dateLine}>
         {weekday} › {monthDay}
       </Text>

@@ -12,6 +12,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { CrtText } from '../components/CrtText';
 import { ApiRequestError } from '../api/client';
 import {
   createSquad,
@@ -20,9 +21,11 @@ import {
   getSquadLeaderboard,
   joinSquad,
   leaveSquad,
+  nudgeSquadMember,
 } from '../api/squads';
 import { mapSubmissionStatusToUi } from '../api/statusMap';
 import { MySquadResponse, SquadLeaderboardEntry } from '../api/types';
+import { useAuth } from '../context/AuthContext';
 import { useDailyChallenge } from '../hooks/useDailyChallenge';
 import { useScreenLayout } from '../hooks/useScreenLayout';
 import { getFlameEvolution } from '../utils/flameEvolution';
@@ -175,6 +178,26 @@ function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) 
       flex: 1,
       minWidth: 0,
     },
+    nudgeButton: {
+      alignItems: 'center',
+      borderColor: theme.colors.accent,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: 4,
+      marginLeft: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+    },
+    nudgeButtonDisabled: {
+      opacity: 0.45,
+    },
+    nudgeButtonText: {
+      color: theme.colors.accent,
+      fontFamily: theme.fonts.mono,
+      fontSize: 9,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
     memberName: {
       color: theme.colors.text,
       fontFamily: theme.fonts.mono,
@@ -274,6 +297,7 @@ function memberTodayStatus(entry: SquadLeaderboardEntry): CompletionStatus {
 
 export function SquadsScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const layout = useScreenLayout();
   const styles = useMemo(() => createStyles(theme, layout), [theme, layout]);
   const { loading: challengeLoading, streak, refresh: refreshChallenge } = useDailyChallenge();
@@ -283,6 +307,8 @@ export function SquadsScreen() {
   const [percentile, setPercentile] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [nudgingId, setNudgingId] = useState<string | null>(null);
+  const [nudgedIds, setNudgedIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [squadName, setSquadName] = useState('');
   const [inviteInput, setInviteInput] = useState('');
@@ -381,6 +407,34 @@ export function SquadsScreen() {
     );
   }, [confirmLeave]);
 
+  const handleNudge = useCallback(
+    async (member: SquadLeaderboardEntry) => {
+      if (!squad || nudgingId) {
+        return;
+      }
+
+      setNudgingId(member.user_id);
+      setError(null);
+      try {
+        const result = await nudgeSquadMember(squad.squad_id, member.user_id);
+        setNudgedIds((prev) => new Set(prev).add(member.user_id));
+        if (!result.delivered) {
+          Alert.alert(
+            'Nudge sent',
+            `${member.username} was nudged in-app, but they have not enabled notifications yet.`
+          );
+        }
+      } catch (err) {
+        const message =
+          err instanceof ApiRequestError ? err.message : 'Could not send nudge.';
+        setError(message);
+      } finally {
+        setNudgingId(null);
+      }
+    },
+    [nudgingId, squad]
+  );
+
   const flame = useMemo(() => getFlameEvolution(streak), [streak]);
   const heroStyles = useMemo(
     () => ({
@@ -419,12 +473,12 @@ export function SquadsScreen() {
               />
             </View>
           </View>
-          <Text style={styles.heroTitle}>Flame Evolution</Text>
+          <CrtText style={styles.heroTitle}>Flame Evolution</CrtText>
           <View style={[styles.tierPill, heroStyles.pill]}>
-            <Text style={[styles.tierText, heroStyles.text]}>{flame.label}</Text>
+            <CrtText style={[styles.tierText, heroStyles.text]}>{flame.label}</CrtText>
           </View>
           <Text style={styles.heroMeta}>
-            Streak: <Text style={styles.heroMetaStrong}>{streak} Days</Text>
+            Streak: <CrtText style={styles.heroMetaStrong}>{streak} Days</CrtText>
             {percentileLabel ? ` (${percentileLabel})` : ''}
           </Text>
           {flame.progressLabel ? (
@@ -438,7 +492,7 @@ export function SquadsScreen() {
           {!squad ? (
             <>
               <View style={styles.formCard}>
-                <Text style={styles.sectionTitle}>Create Squad</Text>
+                <CrtText style={styles.sectionTitle}>Create Squad</CrtText>
                 <TextInput
                   style={styles.input}
                   placeholder="Squad name"
@@ -454,7 +508,7 @@ export function SquadsScreen() {
               </View>
 
               <View style={styles.formCard}>
-                <Text style={styles.sectionTitle}>Join Squad</Text>
+                <CrtText style={styles.sectionTitle}>Join Squad</CrtText>
                 <TextInput
                   style={styles.input}
                   placeholder="Invite code"
@@ -473,12 +527,12 @@ export function SquadsScreen() {
           ) : (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{squad.name}</Text>
+                <CrtText style={styles.sectionTitle}>{squad.name}</CrtText>
                 <Text style={styles.sectionMeta}>
                   {squad.member_count} / {squad.max_members} ACTIVE
                 </Text>
               </View>
-              <Text style={styles.inviteCode}>INVITE: {squad.invite_code}</Text>
+              <CrtText accent style={styles.inviteCode}>INVITE: {squad.invite_code}</CrtText>
 
               <View style={[styles.memberList, { marginTop: 16 }]}>
                 {entries.length === 0 ? (
@@ -486,6 +540,15 @@ export function SquadsScreen() {
                 ) : (
                   entries.map((member) => {
                     const eliminated = member.status === 'ELIMINATED';
+                    const todayStatus = memberTodayStatus(member);
+                    const isSelf = user?.id === member.user_id;
+                    const canNudge =
+                      !isSelf &&
+                      !eliminated &&
+                      todayStatus === 'PENDING' &&
+                      !nudgedIds.has(member.user_id);
+                    const isNudging = nudgingId === member.user_id;
+
                     return (
                     <View
                       key={member.user_id}
@@ -512,9 +575,9 @@ export function SquadsScreen() {
                       </View>
                       <View style={styles.memberInfo}>
                         <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
-                          <Text style={styles.memberName} numberOfLines={1}>
+                          <CrtText style={styles.memberName} numberOfLines={1}>
                             {member.username}
-                          </Text>
+                          </CrtText>
                           {eliminated && (
                             <Text style={styles.eliminatedBadge}>Eliminated</Text>
                           )}
@@ -526,6 +589,25 @@ export function SquadsScreen() {
                           {eliminated ? 'OUT OF RUN' : `STREAK: ${member.streak}`}
                         </Text>
                       </View>
+                      {canNudge ? (
+                        <Pressable
+                          style={[
+                            styles.nudgeButton,
+                            (isNudging || actionLoading) && styles.nudgeButtonDisabled,
+                          ]}
+                          onPress={() => void handleNudge(member)}
+                          disabled={isNudging || actionLoading}
+                        >
+                          {isNudging ? (
+                            <ActivityIndicator size="small" color={theme.colors.accent} />
+                          ) : (
+                            <>
+                              <Feather name="bell" size={12} color={theme.colors.accent} />
+                              <Text style={styles.nudgeButtonText}>Nudge</Text>
+                            </>
+                          )}
+                        </Pressable>
+                      ) : null}
                     </View>
                     );
                   })
