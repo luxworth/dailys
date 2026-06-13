@@ -1,10 +1,10 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 
 import { AudioType, HapticType, InteractionMeta } from '../api/types';
 import { soundAssets } from './soundMap';
 
-const loadedSounds = new Map<AudioType, Audio.Sound>();
+const loadedSounds = new Map<AudioType, AudioPlayer>();
 let preloadPromise: Promise<void> | null = null;
 
 async function playHaptic(haptic: HapticType): Promise<void> {
@@ -29,31 +29,32 @@ async function playHaptic(haptic: HapticType): Promise<void> {
   }
 }
 
-async function ensureSoundLoaded(audio: AudioType): Promise<Audio.Sound> {
+function ensureSoundLoaded(audio: AudioType): AudioPlayer {
   const cached = loadedSounds.get(audio);
   if (cached) {
     return cached;
   }
 
-  const { sound } = await Audio.Sound.createAsync(soundAssets[audio], {
-    shouldPlay: false,
-    volume: 1,
-  });
-  loadedSounds.set(audio, sound);
-  return sound;
+  const player = createAudioPlayer(soundAssets[audio]);
+  loadedSounds.set(audio, player);
+  return player;
 }
 
 export async function preloadInteractionSounds(): Promise<void> {
   if (!preloadPromise) {
     preloadPromise = (async () => {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-      });
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          interruptionMode: 'duckOthers',
+        });
 
-      await Promise.all(
-        (Object.keys(soundAssets) as AudioType[]).map((audio) => ensureSoundLoaded(audio))
-      );
+        for (const audio of Object.keys(soundAssets) as AudioType[]) {
+          ensureSoundLoaded(audio);
+        }
+      } catch {
+        preloadPromise = null;
+      }
     })();
   }
 
@@ -68,19 +69,19 @@ export async function fireInteraction(meta: InteractionMeta): Promise<void> {
 }
 
 async function playAudio(audio: AudioType, intensity: number): Promise<void> {
-  const sound = await ensureSoundLoaded(audio);
   const volume = Math.max(0, Math.min(1, intensity));
 
   try {
-    await sound.setPositionAsync(0);
-    await sound.setVolumeAsync(volume);
-    await sound.playAsync();
+    const player = ensureSoundLoaded(audio);
+    player.volume = volume;
+    await player.seekTo(0);
+    player.play();
   } catch {
-    const { sound: fresh } = await Audio.Sound.createAsync(soundAssets[audio], {
-      shouldPlay: true,
-      volume,
-    });
+    loadedSounds.get(audio)?.remove();
+    const fresh = createAudioPlayer(soundAssets[audio]);
     loadedSounds.set(audio, fresh);
+    fresh.volume = volume;
+    fresh.play();
   }
 }
 

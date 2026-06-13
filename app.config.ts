@@ -37,6 +37,9 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       favicon: './assets/favicon.png',
     },
     plugins: [
+      'expo-audio',
+      'expo-localization',
+      'expo-secure-store',
       [
         'expo-image-picker',
         {
@@ -52,7 +55,8 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000',
       // Set after running: npx eas init
       eas: {
-        projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? '',
+        projectId:
+          process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? 'a3dced09-9139-45fa-b746-65e0ef482ba3',
       },
     },
   }) as ExpoConfig;

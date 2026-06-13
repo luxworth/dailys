@@ -84,7 +84,7 @@ Startup validation fails fast in staging/production if secrets or CORS are misco
 
 ## InteractionMeta
 
-Transactional endpoints wrap the primary payload in `{ data, interaction }`. The mobile client plays mapped haptics (`expo-haptics`) and sounds (`expo-av`) from `interaction` — no client-side milestone logic.
+Transactional endpoints wrap the primary payload in `{ data, interaction }`. The mobile client plays mapped haptics (`expo-haptics`) and sounds (`expo-audio`) from `interaction` — no client-side milestone logic.
 
 ### Enums
 

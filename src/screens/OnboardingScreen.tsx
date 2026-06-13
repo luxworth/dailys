@@ -327,7 +327,13 @@ export function OnboardingScreen({ onComplete, startAtAuth = false }: Onboarding
       }
       onComplete();
     } catch (err) {
-      setAuthError(err instanceof ApiRequestError ? err.message : 'Authentication failed.');
+      setAuthError(
+        err instanceof ApiRequestError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Authentication failed.'
+      );
     } finally {
       setAuthLoading(false);
     }

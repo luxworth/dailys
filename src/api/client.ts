@@ -75,16 +75,26 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     }
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...rest,
-    headers,
-    body:
-      body === undefined
-        ? undefined
-        : body instanceof FormData
-          ? body
-          : JSON.stringify(body),
-  });
+  const url = `${getApiBaseUrl()}${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...rest,
+      headers,
+      body:
+        body === undefined
+          ? undefined
+          : body instanceof FormData
+            ? body
+            : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiRequestError(
+      0,
+      'NETWORK_ERROR',
+      `Cannot reach API at ${getApiBaseUrl()}. Check EXPO_PUBLIC_API_URL in .env and restart Expo.`
+    );
+  }
 
   if (response.status === 401 && auth && retry) {
     const newToken = await refreshAccessToken();
