@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ApiRequestError } from '../api/client';
@@ -17,11 +19,13 @@ import {
   getPercentile,
   getSquadLeaderboard,
   joinSquad,
+  leaveSquad,
 } from '../api/squads';
 import { mapSubmissionStatusToUi } from '../api/statusMap';
 import { MySquadResponse, SquadLeaderboardEntry } from '../api/types';
 import { useDailyChallenge } from '../hooks/useDailyChallenge';
 import { useScreenLayout } from '../hooks/useScreenLayout';
+import { getFlameEvolution } from '../utils/flameEvolution';
 import { Theme } from '../theme/themes';
 import { useTheme } from '../theme/ThemeContext';
 import { CompletionStatus } from '../types';
@@ -49,10 +53,17 @@ function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) 
       marginBottom: layout.hero.iconMarginBottom,
       position: 'relative',
     },
+    flameGlow: {
+      borderRadius: 999,
+      bottom: -8,
+      left: -8,
+      position: 'absolute',
+      right: -8,
+      top: -8,
+    },
     flameBox: {
       alignItems: 'center',
       backgroundColor: theme.colors.background,
-      borderColor: 'rgba(96,165,250,0.4)',
       borderWidth: 1,
       height: layout.tight ? 72 : 88,
       justifyContent: 'center',
@@ -66,14 +77,12 @@ function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) 
       textAlign: 'center',
     },
     tierPill: {
-      borderColor: 'rgba(96,165,250,0.3)',
       borderWidth: 1,
       marginBottom: 8,
       paddingHorizontal: 12,
       paddingVertical: 4,
     },
     tierText: {
-      color: '#60A5FA',
       fontFamily: theme.fonts.mono,
       fontSize: 11,
       letterSpacing: 2,
@@ -89,6 +98,15 @@ function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) 
     heroMetaStrong: {
       color: theme.colors.text,
       fontFamily: theme.fonts.mono,
+    },
+    progressLabel: {
+      color: theme.colors.textMuted,
+      fontFamily: theme.fonts.mono,
+      fontSize: 11,
+      letterSpacing: 1,
+      marginTop: 4,
+      textAlign: 'center',
+      textTransform: 'uppercase',
     },
     section: {
       padding: pad,
@@ -208,6 +226,21 @@ function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) 
       letterSpacing: 2,
       textTransform: 'uppercase',
     },
+    leaveButton: {
+      alignItems: 'center',
+      borderColor: theme.colors.danger,
+      borderWidth: 1,
+      marginTop: 16,
+      paddingVertical: 12,
+    },
+    leaveButtonText: {
+      color: theme.colors.danger,
+      fontFamily: theme.fonts.sans,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+    },
     inviteCode: {
       color: theme.colors.accent,
       fontFamily: theme.fonts.mono,
@@ -243,7 +276,7 @@ export function SquadsScreen() {
   const { theme } = useTheme();
   const layout = useScreenLayout();
   const styles = useMemo(() => createStyles(theme, layout), [theme, layout]);
-  const { loading: challengeLoading, streak } = useDailyChallenge();
+  const { loading: challengeLoading, streak, refresh: refreshChallenge } = useDailyChallenge();
 
   const [squad, setSquad] = useState<MySquadResponse | null>(null);
   const [entries, setEntries] = useState<SquadLeaderboardEntry[]>([]);
@@ -283,9 +316,12 @@ export function SquadsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadSquad();
-  }, [loadSquad]);
+  useFocusEffect(
+    useCallback(() => {
+      void refreshChallenge();
+      void loadSquad();
+    }, [refreshChallenge, loadSquad])
+  );
 
   const handleCreate = async () => {
     if (!squadName.trim()) {
@@ -321,6 +357,44 @@ export function SquadsScreen() {
     }
   };
 
+  const confirmLeave = useCallback(async () => {
+    setActionLoading(true);
+    setError(null);
+    try {
+      await leaveSquad();
+      await loadSquad();
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : 'Could not leave squad.');
+    } finally {
+      setActionLoading(false);
+    }
+  }, [loadSquad]);
+
+  const handleLeave = useCallback(() => {
+    Alert.alert(
+      'Leave squad?',
+      'Are you sure you want to leave this squad?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: () => void confirmLeave() },
+      ]
+    );
+  }, [confirmLeave]);
+
+  const flame = useMemo(() => getFlameEvolution(streak), [streak]);
+  const heroStyles = useMemo(
+    () => ({
+      glow: { backgroundColor: flame.current.glowColor },
+      box: { borderColor: flame.current.borderColor },
+      pill: { borderColor: flame.current.borderColor },
+      text: { color: flame.current.color },
+    }),
+    [flame]
+  );
+
+  const percentileLabel =
+    percentile !== null ? `Top ${Math.max(1, Math.round(100 - percentile))}% of Finishers` : null;
+
   if (challengeLoading || loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -331,30 +405,31 @@ export function SquadsScreen() {
     );
   }
 
-  const percentileLabel =
-    percentile !== null ? `Top ${Math.max(1, Math.round(100 - percentile))}% of Finishers` : null;
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.flameWrap}>
-            <View style={styles.flameBox}>
+            <View style={[styles.flameGlow, heroStyles.glow]} />
+            <View style={[styles.flameBox, heroStyles.box]}>
               <MaterialCommunityIcons
                 name="fire"
                 size={layout.hero.iconSize}
-                color="#60A5FA"
+                color={flame.current.color}
               />
             </View>
           </View>
           <Text style={styles.heroTitle}>Flame Evolution</Text>
-          <View style={styles.tierPill}>
-            <Text style={styles.tierText}>Tier 4: Plasma</Text>
+          <View style={[styles.tierPill, heroStyles.pill]}>
+            <Text style={[styles.tierText, heroStyles.text]}>{flame.label}</Text>
           </View>
           <Text style={styles.heroMeta}>
             Streak: <Text style={styles.heroMetaStrong}>{streak} Days</Text>
             {percentileLabel ? ` (${percentileLabel})` : ''}
           </Text>
+          {flame.progressLabel ? (
+            <Text style={styles.progressLabel}>{flame.progressLabel}</Text>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -456,6 +531,16 @@ export function SquadsScreen() {
                   })
                 )}
               </View>
+
+              <Pressable
+                style={styles.leaveButton}
+                onPress={handleLeave}
+                disabled={actionLoading}
+              >
+                <Text style={styles.leaveButtonText}>
+                  {actionLoading ? 'Working...' : 'Leave Squad'}
+                </Text>
+              </Pressable>
             </>
           )}
         </View>

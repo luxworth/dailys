@@ -22,9 +22,10 @@ import { RootTabParamList } from '../navigation/AppNavigator';
 
 type FeedNav = BottomTabNavigationProp<RootTabParamList, 'Feed'>;
 
+import { formatTimeShort } from '../utils/dateUtils';
+
 function formatPostTime(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return formatTimeShort(new Date(iso));
 }
 
 function createStyles(theme: Theme, layout: ReturnType<typeof useScreenLayout>) {

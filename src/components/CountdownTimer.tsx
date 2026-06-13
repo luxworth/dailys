@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ScreenLayoutMetrics, useScreenLayout } from '../hooks/useScreenLayout';
 import { Theme } from '../theme/themes';
 import { useTheme } from '../theme/ThemeContext';
-import { formatCountdown } from '../utils/dateUtils';
+import { formatCountdown, formatMonthDayShort, formatWeekdayLong } from '../utils/dateUtils';
 
 interface CountdownTimerProps {
   closesAt?: string | null;
@@ -85,10 +85,8 @@ export function CountdownTimer({ closesAt, onDeadline, layout: layoutProp }: Cou
   }, [closesAt, fired, onDeadline]);
 
   const now = new Date();
-  const weekday = now.toLocaleDateString(undefined, { weekday: 'long' }).toUpperCase();
-  const monthDay = now
-    .toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    .toUpperCase();
+  const weekday = formatWeekdayLong(now);
+  const monthDay = formatMonthDayShort(now);
 
   return (
     <View style={styles.container}>

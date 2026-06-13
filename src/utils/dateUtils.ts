@@ -1,3 +1,5 @@
+export const APP_LOCALE = 'en-US';
+
 export function getLocalDateString(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -32,11 +34,35 @@ export function formatCountdown(ms: number): string {
 
 export function formatDisplayDate(dateStr: string): string {
   const date = parseDateString(dateStr);
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(APP_LOCALE, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
   });
+}
+
+export function formatWeekdayLong(date: Date): string {
+  return date.toLocaleDateString(APP_LOCALE, { weekday: 'long' }).toUpperCase();
+}
+
+export function formatMonthDayShort(date: Date): string {
+  return date.toLocaleDateString(APP_LOCALE, { month: 'short', day: 'numeric' }).toUpperCase();
+}
+
+export function formatMonthDay(date: Date): string {
+  return date.toLocaleDateString(APP_LOCALE, { month: 'short', day: 'numeric' });
+}
+
+export function formatMonthDayYear(date: Date): string {
+  return date.toLocaleDateString(APP_LOCALE, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function formatTimeShort(date: Date): string {
+  return date.toLocaleTimeString(APP_LOCALE, { hour: '2-digit', minute: '2-digit' });
 }
 
 export function getDaysInMonth(year: number, month: number): number {
@@ -44,7 +70,7 @@ export function getDaysInMonth(year: number, month: number): number {
 }
 
 export function getMonthLabel(year: number, month: number): string {
-  return new Date(year, month, 1).toLocaleDateString(undefined, {
+  return new Date(year, month, 1).toLocaleDateString(APP_LOCALE, {
     month: 'long',
     year: 'numeric',
   });

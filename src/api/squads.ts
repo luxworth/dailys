@@ -24,6 +24,10 @@ export async function getMySquad(): Promise<MySquadResponse | null> {
   return apiFetch<MySquadResponse | null>('/api/v1/users/me/squad');
 }
 
+export async function leaveSquad(): Promise<void> {
+  await apiFetch<void>('/api/v1/users/me/squad', { method: 'DELETE' });
+}
+
 export async function getSquadLeaderboard(squadId: string): Promise<SquadLeaderboardResponse> {
   return apiFetch<SquadLeaderboardResponse>(`/api/v1/squads/${squadId}/leaderboard`);
 }

@@ -99,6 +99,26 @@ async def test_squad_full(client):
 
 
 @pytest.mark.asyncio
+async def test_leave_squad(client):
+    user = await register_user(client, "leaver")
+    headers = auth_headers(user)
+
+    created = await client.post(
+        "/api/v1/squads",
+        json={"name": "Temporary Squad"},
+        headers=headers,
+    )
+    assert created.status_code == 201
+
+    response = await client.delete("/api/v1/users/me/squad", headers=headers)
+    assert response.status_code == 204
+
+    me = await client.get("/api/v1/users/me/squad", headers=headers)
+    assert me.status_code == 200
+    assert me.json() is None
+
+
+@pytest.mark.asyncio
 async def test_leaderboard_today_status(client, db_session):
     await client.post("/api/v1/internal/challenges/release", headers=internal_headers())
     creator = await register_user(client, "lbuser")

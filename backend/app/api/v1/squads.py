@@ -19,7 +19,7 @@ from app.schemas import (
     UserItemsResponse,
 )
 from app.services.history import get_user_history
-from app.services.squads import create_squad, get_my_squad, get_squad_leaderboard, join_squad
+from app.services.squads import create_squad, get_my_squad, get_squad_leaderboard, join_squad, leave_squad
 from app.services.streak import calculate_percentile, calculate_streak
 
 router = APIRouter(tags=["squads"])
@@ -49,6 +49,14 @@ async def my_squad(
     db: AsyncSession = Depends(get_async_session),
 ) -> MySquadResponse | None:
     return await get_my_squad(db, user)
+
+
+@router.delete("/users/me/squad", status_code=status.HTTP_204_NO_CONTENT)
+async def leave_squad_endpoint(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> None:
+    await leave_squad(db, user)
 
 
 @router.get("/squads/{squad_id}/leaderboard", response_model=SquadLeaderboardResponse)

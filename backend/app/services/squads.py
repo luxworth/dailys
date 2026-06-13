@@ -138,6 +138,21 @@ async def join_squad(db: AsyncSession, user: User, invite_code: str) -> MySquadR
     )
 
 
+async def leave_squad(db: AsyncSession, user: User) -> None:
+    membership = await _get_active_membership(db, user.id)
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorResponse(
+                code="NOT_IN_SQUAD",
+                message="You are not in a squad.",
+            ).model_dump(),
+        )
+
+    await db.delete(membership)
+    await db.commit()
+
+
 async def get_my_squad(db: AsyncSession, user: User) -> MySquadResponse | None:
     membership = await _get_active_membership(db, user.id)
     if membership is None:

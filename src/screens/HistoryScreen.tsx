@@ -14,7 +14,7 @@ import { useHistory } from '../hooks/useHistory';
 import { ScreenLayoutMetrics, useScreenLayout } from '../hooks/useScreenLayout';
 import { Theme } from '../theme/themes';
 import { useTheme } from '../theme/ThemeContext';
-import { parseDateString } from '../utils/dateUtils';
+import { formatMonthDay, formatMonthDayYear, parseDateString } from '../utils/dateUtils';
 import { formatSubmissionPreview } from '../utils/traceUtils';
 
 function createStyles(theme: Theme, layout: ScreenLayoutMetrics) {
@@ -160,10 +160,7 @@ function createStyles(theme: Theme, layout: ScreenLayoutMetrics) {
 }
 
 function formatShortDate(dateStr: string): string {
-  return parseDateString(dateStr).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatMonthDay(parseDateString(dateStr));
 }
 
 export function HistoryScreen() {
@@ -234,11 +231,7 @@ export function HistoryScreen() {
                     <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
                       <Feather name="crosshair" size={10} color={theme.colors.success} />
                       <Text style={styles.traceDate}>
-                        {parseDateString(item.date).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
+                        {formatMonthDayYear(parseDateString(item.date))}
                       </Text>
                     </View>
                     <Text style={styles.traceType}>{item.type}</Text>
